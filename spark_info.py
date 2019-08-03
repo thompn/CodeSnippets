@@ -469,7 +469,6 @@ spark.sql(''' ANALYZE TABLE schema.tablename COMPUTE STATISTICS ''')
 #example
 spark.catalog.listTables('reporting')
 
-
 # Pandas
 
 # Think VERY carefully before using pandas with spark.
