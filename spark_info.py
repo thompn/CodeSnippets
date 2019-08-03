@@ -1,11 +1,6 @@
-
-# Think *VERY* carefully before using pandas with spark.
-# Using pandas will turn your job into a non-distributed
-# job and your driver will be the only executor doing any work.
-# Also it will require that all your data fit in this single executor.
-# Over time pyspark native dataframes have gained features that were, before,
-# only available in pandas. Check if what you want to do can now be done using
-# pyspark dataframes.
+# Some code snippets to make life a bit easier in pySpark.
+# Not all areas are covered, not all table references make sense
+# Use at own risk
 
 # When being run in standard cluster config
 # spark connection is already built
@@ -36,7 +31,11 @@ spark = (
     .builder
     .appName('appname')
 
-    # use dynamic resource allocation
+    # use dynamic resource allocation #
+    # allows for adding or removing Spark executors dynamically
+    # to match the workload. Unlike the traditional static allocation
+    # where a Spark application reserves CPU and memory resources upfront
+    # with dynamic allocation you get as much as needed and no more
     .config("spark.dynamicAllocation.enabled", "true")
 
     # needed for dynamicAllocation.enabled
@@ -469,3 +468,21 @@ spark.sql(''' ANALYZE TABLE schema.tablename COMPUTE STATISTICS ''')
 
 #example
 spark.catalog.listTables('reporting')
+
+
+# Pandas
+
+# Think VERY carefully before using pandas with spark.
+# Using pandas will turn your job into a non-distributed
+# job and your driver will be the only executor doing any work.
+# Also it will require that all your data fit in this single executor.
+# Over time pyspark native dataframes have gained features that were, before,
+# only available in pandas. Check if what you want to do can now be done using
+# pyspark dataframes.
+
+# you also need to make sure that the DataFrame needs to be small enough
+# because all the data will be loaded into the driver’s memory.
+
+# Send spark df to pandas df
+
+df.toPandas()
