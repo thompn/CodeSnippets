@@ -3,6 +3,15 @@
 # uncomment and run place this on the first line
 # or after imports (before spark app config)
 
+
+# Think *VERY* carefully before using pandas with spark.
+# Using pandas will turn your job into a non-distributed
+# job and your driver will be the only executor doing any work.
+# Also it will require that all your data fit in this single executor.
+# Over time pyspark native dataframes have gained features that were, before,
+# only available in pandas. Check if what you want to do can now be done using
+# pyspark dataframes.
+
 # sc.stop()
 
 # spark imports
@@ -275,5 +284,189 @@ df.join(df4, ['name', 'age']).select(df.name, df.age)
 # With the select part at the end, we avoid duplicated columns (drop duplicated columns otherwise)
 # http://spark.apache.org/docs/2.1.0/api/python/pyspark.sql.html
 
-# write to new ORC table (in overwrite mode)
-df.write.saveAsTable('TABLE NAME', format='orc', mode='overwrite')
+#Cross join / Cartessian product / Join all against all
+
+df.crossJoin(df2.select("field1"))
+
+# Append / Union  Tables (dfs)
+
+df_concat = df_1.union(df_2)
+
+# Save / Write file externally
+# will be saved in HDFS
+
+df.write.csv('mycsv.csv')
+
+
+# Write a function, store it in HiveContext and use it
+
+# Example:
+
+from pyspark.sql.types import ArrayType, StringType, DateType
+from pyspark.sql import SparkSession, HiveContext
+def get_matches(src,dst,src_list, dst_list):
+    """Get matching elements in src_list and dst_list except if matches src or dst"""
+    matches=[]
+    for src_conn in src_list:
+        print src_conn
+        if (src_conn in dst_list) & (src_conn<>dst):
+            matches.append(src_conn)
+    return matches
+
+hc = HiveContext(sc)
+hc.registerFunction('get_matches', get_matches, ArrayType(StringType()))
+
+df_conn_list_mutual=df_conn_list\
+    .selectExpr('*','get_matches(src,dst,connections_src,connections_dst) AS mutual_connections')
+
+# Dates (String to Date, Date to String, etc)
+
+# String to Date:
+
+from dateutil.parser import parse
+str_date = '2018-05-01'
+a = parse(str_date)
+
+# Date to string:
+
+a.strftime('%Y-%m-%d')
+
+# Get weekday
+df.select(date_format('capturetime', 'E').alias('weekday'))
+
+# Get Weeks (date)
+
+import datetime
+a = datetime.now()
+a.isocalendar()[1]
+
+# Go from week (yyyyww) to day (yyyy_mm_dd) format
+
+def get_start_end_dates(yyyyww):
+    year = yyyyww[:4]
+    week = yyyyww[-2:]
+    first_day_year = str(year) + '-' +  '01' + '-' + '01'
+    d = parse(first_day_year)
+    if(d.weekday()<= 3):
+        d = d - timedelta(d.weekday())
+    else:
+        d = d + timedelta(7-d.weekday())
+    dlt = timedelta(days = (int(week)-1)*7)
+    return d + dlt,  d + dlt + timedelta(days=6)
+
+# Go easily from yyyy_mm_dd to month (yyyy_mm)
+
+# example using SQL syntax in the F.expr statement
+
+final_table4 = (final_table3\
+.withColumn('month_impl',F.\
+expr("concat(year(date_signup),'-',LPAD(month(date_signup),2,0))")))
+
+
+# Add and Substract dates
+
+from datetime import datetime, timedelta
+from dateutil.parser import parse
+
+d = datetime.today() - timedelta(days=1305)
+
+# Add or subtract months
+
+def monthdelta(date, delta):
+    m, y = (date.month+delta) % 12, date.year + ((date.month)+delta-1) // 12
+    if not m: m = 12
+    d = min(date.day, [31,
+        29 if y%4==0 and not y%400==0 else 28,31,30,31,30,31,31,30,31,30,31][m-1])
+    return date.replace(day=d,month=m, year=y)
+
+previous_month = monthdelta(datetime.now(), -1)
+
+# Get the difference between two months
+
+def monthdelta(d1, d2):
+    d1=parse(d1)
+    d2=parse(d2)
+    delta = 0
+    while True:
+        mdays = monthrange(d1.year, d1.month)[1]
+        d1 += timedelta(days=mdays)
+        if d1 <= d2:
+            delta += 1
+        else:
+            break
+    return delta
+
+monthdelta_F = F.udf(monthdelta,T.IntegerType())
+
+# Difference between two dates (absolute number)
+
+d1 =  '2020-12-01'
+d2 =  '2020-12-08'
+
+abs((parse(d2) - parse(d1)).days)
+
+# Difference between two weeks of the same year (absolute number)
+
+# being the week field in this format: YYYYWW or YYYY_WW or YYYY-WW ...
+
+def substract_weeks(w2,w1):
+    w2 = int(w2[-2:])
+    w1 = int(w1[-2:])
+    result = abs(w2-w1)
+    return result
+
+substract_weeks = F.udf(substract_weeks,T.IntegerType())
+
+final_table_2 = ( final_table_2.withColumn('signup_act_diff',substract_weeks(F.col('yyyy_ww_activation'),F.col('yyyy_ww_signups')))
+)
+
+# Export/save/write dataframe to Hadoop
+
+Spark_df.repartition([200]).write.saveAsTable('schema_name.table_name', format = 'orc', mode = 'overwrite')
+
+
+# Export/save/write dataframe to Hadoop and append it to existing table
+
+Spark_df.repartition([200]).write.mode("append").insertInto("schema_name.table_name")
+
+
+# Export/save/write dataframe to Hadoop with Partitions
+
+Spark_df.write.partitionBy('col').saveAsTable('schema_name.table_name', format = 'orc', mode = 'overwrite')
+
+# Exp./save/write dataframe to Hadoop with Partitions and append it to existing table
+
+Spark_df.write.partitionBy('col').saveAsTable('schema_name.table_name', format = 'orc', mode = 'append')
+
+# Delete partitions from existing table in Hadoop
+
+last_month = datetime.now()
+
+initial_month = str(last_month.year) + '-' + str(last_month.month).zfill(2) +  '-' + '01'
+
+num_partitions_to_delete = abs((datetime.now() - parse(initial_month)).days)
+
+day = initial_month
+
+for i in range(num_partitions_to_delete):
+
+    next_day = (parse(day) + timedelta(days=1)).strftime('%Y-%m-%d')
+    print day, next_day
+
+    spark.sql(f''' ALTER TABLE schema.table DROP IF EXISTS PARTITION( partitioncol = "{day}" )''')
+
+    day = next_day
+
+# Get statistics from a Hadoop table
+
+# Number of rows
+# Number of files
+# Size in Bytes
+# Number of partition if the table is partitioned
+
+spark.sql(''' ANALYZE TABLE schema.tablename COMPUTE STATISTICS ''')
+
+# Get tables from schema
+
+#example
+spark.catalog.listTables('reporting')
