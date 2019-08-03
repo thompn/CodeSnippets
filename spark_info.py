@@ -92,7 +92,6 @@ df = spark.sql(query)
 
 df = spark.table('schema.table')
 
-
 # upload a table from Hadoop and manipulate it in pySpark
 
 df = (spark
@@ -467,7 +466,7 @@ spark.sql(''' ANALYZE TABLE schema.tablename COMPUTE STATISTICS ''')
 # Get tables from schema
 
 #example
-spark.catalog.listTables('reporting')
+spark.catalog.listTables('schema')
 
 # Pandas
 
