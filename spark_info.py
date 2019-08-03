@@ -248,12 +248,13 @@ df.join(df2, df.name == df2.name, 'left').select(df.name, df2.height)
 df.join(df2, 'name', 'left').select(df.name, df2.height)
 
 # Possible joins:
-# inner, cross, outer, full, full_outer, left, left_outer, right, right_outer, left_semi,  # and left_anti.
+# inner, cross, outer, full, full_outer, left,
+# left_outer, right, right_outer, left_semi,  # and left_anti.
 
 # Broadcast join
 
-# When joining large tables with small ones. In this example, df2 is the small one.
-# It can increase a lot efficiency
+# When joining large tables with small ones.
+# In this example, df2 is the small one. It can increase a lot efficiency
 
 
 table = df.join(broadcast(df2), cond, 'inner')
@@ -302,7 +303,9 @@ df.write.csv('mycsv.csv')
 from pyspark.sql.types import ArrayType, StringType, DateType
 from pyspark.sql import SparkSession, HiveContext
 def get_matches(src,dst,src_list, dst_list):
-    """Get matching elements in src_list and dst_list except if matches src or dst"""
+    """
+    Get matching elements in src_list and dst_list except if matches src or dst
+    """
     matches=[]
     for src_conn in src_list:
         print src_conn
@@ -355,9 +358,8 @@ def get_start_end_dates(yyyyww):
 
 # example using SQL syntax in the F.expr statement
 
-final_table4 = (final_table3\
-.withColumn('month_impl',F.\
-expr("concat(year(date_signup),'-',LPAD(month(date_signup),2,0))")))
+final_table4 = (final_table3 .withColumn('month_impl',\
+F.expr("concat(year(date_signup),'-',LPAD(month(date_signup),2,0))")))
 
 
 # Add and Substract dates
@@ -414,12 +416,14 @@ def substract_weeks(w2,w1):
 
 substract_weeks = F.udf(substract_weeks,T.IntegerType())
 
-final_table_2 = ( final_table_2.withColumn('signup_act_diff',substract_weeks(F.col('yyyy_ww_activation'),F.col('yyyy_ww_signups')))
+final_table_2 = ( final_table_2.withColumn('signup_act_diff',substract_weeks(\
+F.col('yyyy_ww_activation'),F.col('yyyy_ww_signups')))
 )
 
 # Export/save/write dataframe to Hadoop
 
-Spark_df.repartition([200]).write.saveAsTable('schema_name.table_name', format = 'orc', mode = 'overwrite')
+Spark_df.repartition([200]).write.saveAsTable('schema_name.table_name',\
+ format = 'orc', mode = 'overwrite')
 
 
 # Export/save/write dataframe to Hadoop and append it to existing table
@@ -429,17 +433,20 @@ Spark_df.repartition([200]).write.mode("append").insertInto("schema_name.table_n
 
 # Export/save/write dataframe to Hadoop with Partitions
 
-Spark_df.write.partitionBy('col').saveAsTable('schema_name.table_name', format = 'orc', mode = 'overwrite')
+Spark_df.write.partitionBy('col').saveAsTable('schema_name.table_name', \
+format = 'orc', mode = 'overwrite')
 
 # Exp./save/write dataframe to Hadoop with Partitions and append it to existing table
 
-Spark_df.write.partitionBy('col').saveAsTable('schema_name.table_name', format = 'orc', mode = 'append')
+Spark_df.write.partitionBy('col').saveAsTable('schema_name.table_name', \
+format = 'orc', mode = 'append')
 
 # Delete partitions from existing table in Hadoop
 
 last_month = datetime.now()
 
-initial_month = str(last_month.year) + '-' + str(last_month.month).zfill(2) +  '-' + '01'
+initial_month = str(last_month.year) + '-' + str(last_month.month).zfill(2)\
+ +  '-' + '01'
 
 num_partitions_to_delete = abs((datetime.now() - parse(initial_month)).days)
 
@@ -450,7 +457,9 @@ for i in range(num_partitions_to_delete):
     next_day = (parse(day) + timedelta(days=1)).strftime('%Y-%m-%d')
     print day, next_day
 
-    spark.sql(f''' ALTER TABLE schema.table DROP IF EXISTS PARTITION( partitioncol = "{day}" )''')
+    spark.sql(f''' ALTER TABLE schema.table
+              DROP IF EXISTS PARTITION( partitioncol = "{day}" )
+              ''')
 
     day = next_day
 
