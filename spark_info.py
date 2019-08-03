@@ -1,8 +1,3 @@
-# When being run in standard cluster config
-# spark connection is already built
-# uncomment and run place this on the first line
-# or after imports (before spark app config)
-
 
 # Think *VERY* carefully before using pandas with spark.
 # Using pandas will turn your job into a non-distributed
@@ -12,6 +7,10 @@
 # only available in pandas. Check if what you want to do can now be done using
 # pyspark dataframes.
 
+# When being run in standard cluster config
+# spark connection is already built
+# uncomment and run place this on the first line
+# or after imports (before spark app config)
 # sc.stop()
 
 # spark imports
