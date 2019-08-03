@@ -436,7 +436,8 @@ Spark_df.repartition([200]).write.mode("append").insertInto("schema_name.table_n
 Spark_df.write.partitionBy('col').saveAsTable('schema_name.table_name', \
 format = 'orc', mode = 'overwrite')
 
-# Exp./save/write dataframe to Hadoop with Partitions and append it to existing table
+# Exp./save/write dataframe to Hadoop with
+# Partitions and append it to existing table
 
 Spark_df.write.partitionBy('col').saveAsTable('schema_name.table_name', \
 format = 'orc', mode = 'append')
