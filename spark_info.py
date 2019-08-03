@@ -485,3 +485,5 @@ spark.catalog.listTables('reporting')
 # Send spark df to pandas df
 
 df.toPandas()
+
+# I will update this with common pandas code at some point in the future.
