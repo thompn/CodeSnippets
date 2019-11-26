@@ -1,6 +1,8 @@
 # clean headers of pandas dataframes
 def clean_pandas(df):
-    df.columns = df.columns.str.strip()\
+    df.columns = df.columns\
+		# remove leading and trailing space
+		.str.strip()\
                 #make lower case
                 .str.lower()\
                 # replace spaces with '_'
