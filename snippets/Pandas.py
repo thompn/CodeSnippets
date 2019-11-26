@@ -4,3 +4,4 @@ def clean_pandas(df):
     .str.replace(' ', '_')\
     .str.replace('(', '')\
     .str.replace(')', '')
+    return df
